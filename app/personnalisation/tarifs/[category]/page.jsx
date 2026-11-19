@@ -166,7 +166,7 @@ export default async function CategoryTarifsPage({ params }) {
         </div>
 
         <div className="text-center pt-2">
-          <p className={`${yellowtail.className} text-3xl text-[#5A3E36]`}>l'atelier Aloès</p>
+          <p className={`${yellowtail.className} text-3xl text-[#5A3E36]`}>Mistral sauvage</p>
         </div>
       </div>
 

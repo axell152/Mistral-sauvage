@@ -2,7 +2,7 @@ import Link from 'next/link';
 import sql, { initDb } from '../lib/db';
 import { optimizeImage } from '../lib/images';
 
-// Page type « Mes réalisations » réutilisée par bijoux, aquarelle, couture.
+// Page type « Mes réalisations » réutilisée par bijoux.
 export default async function SectionGalleryPage({ section, title, subtitle, subcategory, backHref, backLabel }) {
   await initDb();
   const items = subcategory
@@ -49,7 +49,7 @@ export default async function SectionGalleryPage({ section, title, subtitle, sub
                 <div className="aspect-square overflow-hidden bg-[#F7F4EE]">
                   <img
                     src={optimizeImage(item.image_url)}
-                    alt={item.caption || `${title} - L'Atelier Aloès`}
+                    alt={item.caption || `${title} - Mistral sauvage`}
                     className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
                   />
                 </div>

@@ -2,11 +2,11 @@ import './globals.css';
 import SiteHeader from '../components/SiteHeader';
 export const metadata = {
   metadataBase: new URL('https://l-atelier-aloes-umber.vercel.app'),
-  title: "L'Atelier Aloès | Créations artisanales",
-  description: 'Personnalisation, bijoux, aquarelle, couture et mail club : créations uniques faites main.',
+  title: "Mistral sauvage | Créations artisanales",
+  description: 'Personnalisation et bijoux : créations uniques faites main.',
   openGraph: {
-    title: "L'Atelier Aloès | Créations artisanales",
-    description: 'Personnalisation, bijoux, aquarelle, couture et mail club : créations uniques faites main.',
+    title: "Mistral sauvage | Créations artisanales",
+    description: 'Personnalisation et bijoux : créations uniques faites main.',
     images: ['/logo.png'],
   },
 };
@@ -48,7 +48,7 @@ export default function RootLayout({ children }) {
               </svg>
             </a>
           </div>
-          <p>© {new Date().getFullYear()} L'Atelier Aloès </p>
+          <p>© {new Date().getFullYear()} Mistral sauvage</p>
         </footer>
       </body>
     </html>

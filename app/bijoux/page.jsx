@@ -3,7 +3,7 @@ import sql, { initDb } from '../../lib/db';
 import { JEWELRY_SUBCATEGORIES } from '../../lib/bijoux';
 
 export const revalidate = 0;
-export const metadata = { title: "Bijoux | L'Atelier Aloès" };
+export const metadata = { title: "Bijoux | Mistral sauvage" };
 
 export default async function BijouxPage() {
   await initDb();

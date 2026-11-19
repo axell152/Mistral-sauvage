@@ -17,7 +17,7 @@ async function getItem(sub, idParam) {
 
 export async function generateMetadata({ params }) {
   const item = await getItem(params.sub, params.id);
-  return { title: `${item ? item.name : 'Bijou'} | L'Atelier Aloès` };
+  return { title: `${item ? item.name : 'Bijou'} | Mistral sauvage` };
 }
 
 export default async function JewelryPage({ params }) {

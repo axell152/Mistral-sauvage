@@ -9,14 +9,14 @@ export default function HomePage() {
           Créations artisanales & sur-mesure
         </span>
         <h1 className="text-4xl md:text-5xl font-serif font-bold text-[#4A3B32]">
-          Bienvenue à L'Atelier Aloès
+          Bienvenue chez Mistral sauvage
         </h1>
         <p className="text-[#6B5B52] max-w-xl mx-auto text-base">
           Choisissez votre univers
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {SECTIONS.map((s) => (
           <Link
             key={s.slug}
