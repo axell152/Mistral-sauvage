@@ -24,7 +24,7 @@ export default function RootLayout({ children }) {
         <footer className="bg-[#F7F4EE] border-t border-[#EFECE6] py-10 text-center text-xs text-[#8C7A70] space-y-4">
           <div className="flex items-center justify-center gap-4">
             <a
-              href="https://www.instagram.com/latelieraloes"
+              href="https://www.instagram.com/mistralsauvage_"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Instagram"
