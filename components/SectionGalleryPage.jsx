@@ -2,7 +2,7 @@ import Link from 'next/link';
 import sql, { initDb } from '../lib/db';
 import { optimizeImage } from '../lib/images';
 
-// Page type « Mes réalisations » réutilisée par bijoux, aquarelle, couture.
+// Page type « Mes réalisations » réutilisée par bijoux.
 export default async function SectionGalleryPage({ section, title, subtitle, subcategory, backHref, backLabel }) {
   await initDb();
   const items = subcategory
@@ -25,7 +25,7 @@ export default async function SectionGalleryPage({ section, title, subtitle, sub
         </Link>
       )}
       <div className="text-center space-y-4 py-8 bg-white rounded-3xl border border-[#EFECE6] shadow-xs px-6">
-        <span className="text-xs font-semibold tracking-wider uppercase bg-[#FF9CCB]/30 text-[#5A3E36] px-3 py-1 rounded-full">
+        <span className="text-xs font-semibold tracking-wider uppercase bg-[#244738]/10 text-[#244738] px-3 py-1 rounded-full">
           Créations artisanales & sur-mesure
         </span>
         <h1 className="text-4xl md:text-5xl font-serif font-bold text-[#4A3B32]">{title}</h1>
@@ -49,7 +49,7 @@ export default async function SectionGalleryPage({ section, title, subtitle, sub
                 <div className="aspect-square overflow-hidden bg-[#F7F4EE]">
                   <img
                     src={optimizeImage(item.image_url)}
-                    alt={item.caption || `${title} - L'Atelier Aloès`}
+                    alt={item.caption || `${title} - Mistral sauvage`}
                     className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
                   />
                 </div>

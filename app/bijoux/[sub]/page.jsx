@@ -8,7 +8,7 @@ export const revalidate = 0;
 
 export function generateMetadata({ params }) {
   const sc = getJewelrySubcategory(params.sub);
-  return { title: `${sc ? sc.label : 'Bijoux'} | L'Atelier Aloès` };
+  return { title: `${sc ? sc.label : 'Bijoux'} | Mistral sauvage` };
 }
 
 export default async function BijouxSubPage({ params }) {

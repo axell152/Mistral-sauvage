@@ -1,7 +1,7 @@
 import SectionSubNav from '../../components/SectionSubNav';
 
 export const metadata = {
-  title: "Personnalisation | L'Atelier Aloès",
+  title: "Personnalisation | Mistral sauvage",
   description: 'Stickers, T-shirts, mugs et personnalisations uniques faites main.',
 };
 

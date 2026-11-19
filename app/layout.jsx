@@ -2,18 +2,18 @@ import './globals.css';
 import SiteHeader from '../components/SiteHeader';
 export const metadata = {
   metadataBase: new URL('https://l-atelier-aloes-umber.vercel.app'),
-  title: "L'Atelier Aloès | Créations artisanales",
-  description: 'Personnalisation, bijoux, aquarelle, couture et mail club : créations uniques faites main.',
+  title: "Mistral sauvage | Créations artisanales",
+  description: 'Personnalisation et bijoux : créations uniques faites main.',
   openGraph: {
-    title: "L'Atelier Aloès | Créations artisanales",
-    description: 'Personnalisation, bijoux, aquarelle, couture et mail club : créations uniques faites main.',
+    title: "Mistral sauvage | Créations artisanales",
+    description: 'Personnalisation et bijoux : créations uniques faites main.',
     images: ['/logo.png'],
   },
 };
 export default function RootLayout({ children }) {
   return (
     <html lang="fr" className="h-full">
-      <body className="min-h-full flex flex-col bg-[#FDFBF7] text-[#4A3B32] antialiased selection:bg-[#E8A598] selection:text-white">
+      <body className="min-h-full flex flex-col bg-[#FDFBF7] text-[#4A3B32] antialiased selection:bg-[#244738] selection:text-white">
         
         <SiteHeader />
         {/* Contenu principal */}
@@ -24,7 +24,7 @@ export default function RootLayout({ children }) {
         <footer className="bg-[#F7F4EE] border-t border-[#EFECE6] py-10 text-center text-xs text-[#8C7A70] space-y-4">
           <div className="flex items-center justify-center gap-4">
             <a
-              href="https://www.instagram.com/latelieraloes"
+              href="https://www.instagram.com/mistralsauvage_"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Instagram"
@@ -48,7 +48,7 @@ export default function RootLayout({ children }) {
               </svg>
             </a>
           </div>
-          <p>© {new Date().getFullYear()} L'Atelier Aloès </p>
+          <p>© {new Date().getFullYear()} Mistral sauvage</p>
         </footer>
       </body>
     </html>
