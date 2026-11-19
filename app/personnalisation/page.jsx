@@ -12,7 +12,7 @@ export default async function HomePage() {
     <div className="max-w-5xl mx-auto space-y-12 pb-20 px-4">
       {/* En-tête / Bannière */}
       <div className="text-center space-y-4 py-8 bg-white rounded-3xl border border-[#EFECE6] shadow-xs px-6">
-        <span className="text-xs font-semibold tracking-wider uppercase bg-[#FF9CCB]/30 text-[#5A3E36] px-3 py-1 rounded-full">
+        <span className="text-xs font-semibold tracking-wider uppercase bg-[#244738]/10 text-[#244738] px-3 py-1 rounded-full">
           Créations artisanales & sur-mesure
         </span>
         <h1 className="text-4xl md:text-5xl font-serif font-bold text-[#4A3B32]">

@@ -57,13 +57,13 @@ export default async function CategoryTarifsPage({ params }) {
         </Link>
       </div>
 
-      <div className="bg-[#FF9CCB] rounded-3xl shadow-sm p-6 sm:p-12 space-y-10">
+      <div className="bg-[#244738] rounded-3xl shadow-sm p-6 sm:p-12 space-y-10">
         <div className="text-center space-y-2">
-          <h1 className={`${yellowtail.className} text-5xl sm:text-6xl text-[#5A3E36] leading-tight`}>
+          <h1 className={`${yellowtail.className} text-5xl sm:text-6xl text-[#F1E9D2] leading-tight`}>
             {category}
           </h1>
           {description && (
-            <p className="text-[#5A3E36]/90 text-sm max-w-lg mx-auto whitespace-pre-line">{description}</p>
+            <p className="text-[#F1E9D2]/90 text-sm max-w-lg mx-auto whitespace-pre-line">{description}</p>
           )}
         </div>
 
@@ -71,7 +71,7 @@ export default async function CategoryTarifsPage({ params }) {
           {tables.map((table) => {
             if (table.rows.length === 0) {
               return table.title ? (
-                <h2 key={table.id} className="text-center text-lg font-bold text-[#5A3E36]">
+                <h2 key={table.id} className="text-center text-lg font-bold text-[#F1E9D2]">
                   {table.title}
                 </h2>
               ) : null;
@@ -94,7 +94,7 @@ export default async function CategoryTarifsPage({ params }) {
             return (
               <div key={table.id} className="space-y-3">
                 {table.title && (
-                  <h2 className="text-center text-lg font-bold text-[#5A3E36]">{table.title}</h2>
+                  <h2 className="text-center text-lg font-bold text-[#F1E9D2]">{table.title}</h2>
                 )}
                 <div className="overflow-x-auto">
                   <table className="mx-auto border-collapse">
@@ -103,13 +103,13 @@ export default async function CategoryTarifsPage({ params }) {
                       {hasGroups && (
                         <tr>
                           <th className={table.wrap_labels ? 'w-28 sm:w-32 px-3' : 'px-3'} />
-                          <th className="border-l border-[#5A3E36]/40 px-1" />
+                          <th className="border-l border-[#BCAA7C]/50 px-1" />
                           {headerGroups.map((g, gi) =>
                             g.group ? (
                               <th
                                 key={gi}
                                 colSpan={g.cols.length}
-                                className="px-4 pt-1 text-[#5A3E36] font-bold text-lg sm:text-xl leading-tight whitespace-nowrap"
+                                className="px-4 pt-1 text-[#F1E9D2] font-bold text-lg sm:text-xl leading-tight whitespace-nowrap"
                               >
                                 {table.wrap_labels ? breakWords(g.group) : g.group}
                               </th>
@@ -121,12 +121,12 @@ export default async function CategoryTarifsPage({ params }) {
                       )}
                       <tr>
                         <th className={table.wrap_labels ? 'w-28 sm:w-32 px-3' : 'px-3'} />
-                        <th className="border-l border-[#5A3E36]/40 px-1" />
+                        <th className="border-l border-[#BCAA7C]/50 px-1" />
                         {headerGroups.map((g, gi) => (
                           <th
                             key={gi}
                             colSpan={g.cols.length}
-                            className="px-4 pb-2 text-[#5A3E36] text-xs font-medium whitespace-nowrap"
+                            className="px-4 pb-2 text-[#F1E9D2] text-xs font-medium whitespace-nowrap"
                           >
                             {g.cols.map((c) => c.label).join(' | ')}
                           </th>
@@ -140,17 +140,17 @@ export default async function CategoryTarifsPage({ params }) {
                           <td
                             className={
                               (table.wrap_labels ? 'w-28 sm:w-32 ' : '') +
-                              'text-right px-3 py-1 text-[#5A3E36] font-bold text-base sm:text-lg leading-tight' +
+                              'text-right px-3 py-1 text-[#F1E9D2] font-bold text-base sm:text-lg leading-tight' +
                               (table.wrap_labels ? '' : ' whitespace-nowrap')
                             }
                           >
                             {table.wrap_labels ? breakWords(row.name) : row.name}
                           </td>
-                          <td className="border-l border-[#5A3E36]/40 px-1" />
+                          <td className="border-l border-[#BCAA7C]/50 px-1" />
                           {table.columns.map((c, ci) => (
                             <td
                               key={ci}
-                              className="text-center px-3 py-1 text-[#5A3E36] font-bold text-base sm:text-lg whitespace-nowrap"
+                              className="text-center px-3 py-1 text-[#F1E9D2] font-bold text-base sm:text-lg whitespace-nowrap"
                             >
                               {displayCell(row.values[ci])}
                             </td>
@@ -166,7 +166,7 @@ export default async function CategoryTarifsPage({ params }) {
         </div>
 
         <div className="text-center pt-2">
-          <p className={`${yellowtail.className} text-3xl text-[#5A3E36]`}>Mistral sauvage</p>
+          <p className={`${yellowtail.className} text-3xl text-[#BCAA7C]`}>Mistral sauvage</p>
         </div>
       </div>
 

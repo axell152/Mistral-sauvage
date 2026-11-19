@@ -47,7 +47,7 @@ export default async function JewelryPage({ params }) {
         whatsappNumber={WHATSAPP_NUMBER}
       >
         <div className="space-y-2">
-          <span className="text-xs font-semibold tracking-wider uppercase bg-[#FF9CCB]/30 text-[#5A3E36] px-3 py-1 rounded-full">
+          <span className="text-xs font-semibold tracking-wider uppercase bg-[#244738]/10 text-[#244738] px-3 py-1 rounded-full">
             {sc.label}
           </span>
           <h1 className="text-3xl md:text-4xl font-serif font-bold text-[#4A3B32]">{item.name}</h1>
