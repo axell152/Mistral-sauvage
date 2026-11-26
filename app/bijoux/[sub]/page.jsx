@@ -52,7 +52,7 @@ export default async function BijouxSubPage({ params }) {
                   {cover && (
                     <img
                       src={optimizeImage(cover, 800)}
-                      alt={item.name}
+                      alt={item.name || 'Création Mistral sauvage'}
                       className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
                     />
                   )}
@@ -62,10 +62,12 @@ export default async function BijouxSubPage({ params }) {
                     </span>
                   )}
                 </div>
-                <div className="px-4 py-3 space-y-0.5">
-                  <p className="font-serif font-bold text-[#4A3B32]">{item.name}</p>
-                  <p className="text-sm text-[#6B5B52]">{price || 'Prix sur demande'}</p>
-                </div>
+                {(item.name || price) && (
+                  <div className="px-4 py-3 space-y-0.5">
+                    {item.name && <p className="font-serif font-bold text-[#4A3B32]">{item.name}</p>}
+                    {price && <p className="text-sm text-[#6B5B52]">{price}</p>}
+                  </div>
+                )}
               </Link>
             );
           })}

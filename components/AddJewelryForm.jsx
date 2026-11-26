@@ -54,10 +54,11 @@ export default function AddJewelryForm({ createAction, imageAction, subcategorie
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      <p className="text-sm text-[#6B5B52]">Seules les photos et la sous-catégorie sont obligatoires.</p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label className={label}>Nom du bijou</label>
-          <input required name="name" className={field} placeholder="Ex. Bracelet perles roses" />
+          <label className={label}>Nom du bijou (optionnel)</label>
+          <input name="name" className={field} placeholder="Ex. Bracelet perles roses" />
         </div>
         <div>
           <label className={label}>Sous-catégorie</label>
@@ -69,13 +70,17 @@ export default function AddJewelryForm({ createAction, imageAction, subcategorie
           </select>
         </div>
         <div>
-          <label className={label}>Prix en € (vide = sur demande)</label>
+          <label className={label}>Prix en € (optionnel)</label>
           <input name="price" inputMode="decimal" className={field} placeholder="Ex. 25" />
         </div>
         <div>
           <label className={label}>Matières (optionnel)</label>
           <input name="materials" className={field} placeholder="Ex. Acier inoxydable, perles de verre" />
         </div>
+      </div>
+      <div>
+        <label className={label}>Lien de la fiche Etsy (optionnel)</label>
+        <input type="url" name="etsy_url" className={field} placeholder="https://www.etsy.com/listing/..." />
       </div>
       <div>
         <label className={label}>Couleurs proposées (optionnel, séparées par des virgules)</label>

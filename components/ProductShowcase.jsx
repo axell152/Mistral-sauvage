@@ -5,7 +5,7 @@ import ProductOrder from './ProductOrder';
 
 // Photos + choix de la couleur : un clic sur une couleur affiche la photo associée,
 // et un clic sur la photo d'une couleur sélectionne cette couleur.
-export default function ProductShowcase({ images, imageColors, name, categoryLabel, colors, available, whatsappNumber, children }) {
+export default function ProductShowcase({ images, imageColors, name, categoryLabel, colors, available, whatsappNumber, etsyUrl, children }) {
   const [current, setCurrent] = useState(0);
   const [color, setColor] = useState(null);
 
@@ -32,6 +32,7 @@ export default function ProductShowcase({ images, imageColors, name, categoryLab
           colors={colors}
           available={available}
           whatsappNumber={whatsappNumber}
+          etsyUrl={etsyUrl}
           color={color}
           onColorChange={handleColorChange}
         />
