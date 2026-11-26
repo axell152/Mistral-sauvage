@@ -1,16 +1,15 @@
 'use client';
 import Link from 'next/link';
 
-// Choix de la couleur + boutons de commande (le message WhatsApp reprend la couleur choisie).
+// Choix de la couleur (optionnel) + boutons : fiche Etsy, question, devis.
 // Couleur contrôlée par le parent (ProductShowcase) pour synchroniser la photo affichée.
-export default function ProductOrder({ name, categoryLabel, colors, available, whatsappNumber, color, onColorChange }) {
+export default function ProductOrder({ name, categoryLabel, colors, available, whatsappNumber, etsyUrl, color, onColorChange }) {
   const needsColor = colors.length > 0;
-  const canOrder = !needsColor || color;
 
   const message =
-    `Bonjour, je suis intéressé(e) par le bijou « ${name} » (${categoryLabel})` +
+    `Bonjour, j'ai une question sur ce bijou${name ? ` « ${name} »` : ''} (${categoryLabel})` +
     (color ? ` en couleur : ${color}.` : '.');
-  const href = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+  const questionHref = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
 
   return (
     <div className="space-y-5">
@@ -39,27 +38,33 @@ export default function ProductOrder({ name, categoryLabel, colors, available, w
         </div>
       )}
 
-      <div className="flex flex-col sm:flex-row gap-3 pt-1">
-        {canOrder ? (
+      <div className="flex flex-col gap-3 pt-1">
+        {etsyUrl && available && (
           <a
-            href={href}
+            href={etsyUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-center bg-[#5A3E36] hover:bg-[#4A3B32] text-white font-bold px-8 py-3.5 rounded-2xl transition"
+            className="text-center bg-[#244738] hover:bg-[#1B352A] text-white font-bold px-8 py-3.5 rounded-2xl transition"
           >
-            {available ? 'Commander sur WhatsApp' : 'Demander un bijou similaire'}
+            Voir sur Etsy
           </a>
-        ) : (
-          <span className="text-center bg-[#5A3E36]/40 text-white font-bold px-8 py-3.5 rounded-2xl cursor-not-allowed">
-            Choisis une couleur pour commander
-          </span>
         )}
-        <Link
-          href="/contact"
-          className="text-center bg-white border border-[#EFECE6] hover:border-[#5A3E36] text-[#4A3B32] font-semibold px-8 py-3.5 rounded-2xl transition"
-        >
-          Me contacter
-        </Link>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <a
+            href={questionHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex-1 text-center bg-white border border-[#EFECE6] hover:border-[#244738] text-[#4A3B32] font-semibold px-6 py-3 rounded-2xl transition"
+          >
+            Poser une question
+          </a>
+          <Link
+            href="/contact"
+            className="flex-1 text-center bg-white border border-[#EFECE6] hover:border-[#244738] text-[#4A3B32] font-semibold px-6 py-3 rounded-2xl transition"
+          >
+            Demander un devis
+          </Link>
+        </div>
       </div>
     </div>
   );

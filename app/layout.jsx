@@ -1,7 +1,7 @@
 import './globals.css';
 import SiteHeader from '../components/SiteHeader';
 export const metadata = {
-  metadataBase: new URL('https://l-atelier-aloes-umber.vercel.app'),
+  metadataBase: new URL('https://mistralsauvage.vercel.app'),
   title: "Mistral sauvage | Créations artisanales",
   description: 'Personnalisation et bijoux : créations uniques faites main.',
   openGraph: {

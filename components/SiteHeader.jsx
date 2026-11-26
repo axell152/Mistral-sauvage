@@ -3,6 +3,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { SECTIONS } from '../lib/sections';
+import { ETSY_SHOP_URL } from '../lib/site';
 
 export default function SiteHeader() {
   const [open, setOpen] = useState(false);
@@ -26,6 +27,11 @@ export default function SiteHeader() {
               {s.label}
             </Link>
           ))}
+          {ETSY_SHOP_URL && (
+            <a href={ETSY_SHOP_URL} target="_blank" rel="noopener noreferrer" className={linkClass(false)}>
+              Boutique Etsy ↗
+            </a>
+          )}
           <Link
             href="/contact"
             className="text-sm font-semibold bg-[#BCAA7C] hover:bg-[#CDBE96] text-[#244738] px-4 py-2 rounded-xl transition"
@@ -59,6 +65,17 @@ export default function SiteHeader() {
               {s.label}
             </Link>
           ))}
+          {ETSY_SHOP_URL && (
+            <a
+              href={ETSY_SHOP_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => setOpen(false)}
+              className={`${linkClass(false)} py-1`}
+            >
+              Boutique Etsy ↗
+            </a>
+          )}
           <Link
             href="/contact"
             onClick={() => setOpen(false)}

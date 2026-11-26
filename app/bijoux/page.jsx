@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import sql, { initDb } from '../../lib/db';
 import { JEWELRY_SUBCATEGORIES } from '../../lib/bijoux';
+import { ETSY_SHOP_URL } from '../../lib/site';
 
 export const revalidate = 0;
 export const metadata = { title: "Bijoux | Mistral sauvage" };
@@ -44,7 +45,17 @@ export default async function BijouxPage() {
         ))}
       </div>
 
-      <div className="text-center">
+      <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+        {ETSY_SHOP_URL && (
+          <a
+            href={ETSY_SHOP_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-block bg-[#244738] hover:bg-[#1B352A] text-white font-bold px-8 py-3.5 rounded-2xl transition"
+          >
+            Voir toute la boutique sur Etsy
+          </a>
+        )}
         <Link
           href="/contact"
           className="inline-block bg-[#5A3E36] hover:bg-[#4A3B32] text-white font-bold px-8 py-3.5 rounded-2xl transition"

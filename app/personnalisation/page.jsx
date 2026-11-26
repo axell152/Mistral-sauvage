@@ -48,6 +48,18 @@ export default async function HomePage() {
                 {item.caption && (
                   <p className="text-sm text-[#6B5B52] px-3 py-2 text-center">{item.caption}</p>
                 )}
+                {item.etsy_url && (
+                  <div className="px-3 pb-3 text-center">
+                    <a
+                      href={item.etsy_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-block text-sm font-semibold bg-[#244738] hover:bg-[#1B352A] text-white px-4 py-2 rounded-xl transition"
+                    >
+                      Voir sur Etsy
+                    </a>
+                  </div>
+                )}
               </div>
             ))}
           </div>

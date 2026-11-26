@@ -17,7 +17,7 @@ async function getItem(sub, idParam) {
 
 export async function generateMetadata({ params }) {
   const item = await getItem(params.sub, params.id);
-  return { title: `${item ? item.name : 'Bijou'} | Mistral sauvage` };
+  return { title: `${item?.name || 'Création'} | Mistral sauvage` };
 }
 
 export default async function JewelryPage({ params }) {
@@ -40,18 +40,21 @@ export default async function JewelryPage({ params }) {
       <ProductShowcase
         images={images}
         imageColors={imageColors}
-        name={item.name}
+        name={item.name || ''}
         categoryLabel={sc.label}
         colors={colors}
         available={item.is_available}
         whatsappNumber={WHATSAPP_NUMBER}
+        etsyUrl={item.etsy_url}
       >
         <div className="space-y-2">
           <span className="text-xs font-semibold tracking-wider uppercase bg-[#244738]/10 text-[#244738] px-3 py-1 rounded-full">
             {sc.label}
           </span>
-          <h1 className="text-3xl md:text-4xl font-serif font-bold text-[#4A3B32]">{item.name}</h1>
-          <p className="text-2xl font-semibold text-[#5A3E36]">{price || 'Prix sur demande'}</p>
+          {item.name && (
+            <h1 className="text-3xl md:text-4xl font-serif font-bold text-[#4A3B32]">{item.name}</h1>
+          )}
+          {price && <p className="text-2xl font-semibold text-[#5A3E36]">{price}</p>}
           {!item.is_available && (
             <p className="text-sm font-semibold text-[#6B5B52]">Ce bijou n'est plus disponible.</p>
           )}

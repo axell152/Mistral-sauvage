@@ -5,7 +5,7 @@ import { revalidatePath } from 'next/cache';
 import sql, { initDb } from '../../../lib/db';
 import { uploadImage, deleteImage } from '../../../lib/cloudinary';
 import { optimizeImage } from '../../../lib/images';
-import { JEWELRY_SUBCATEGORIES, getJewelrySubcategory, parseImages, parseColors, parseImageColors, splitColors, formatPrice } from '../../../lib/bijoux';
+import { JEWELRY_SUBCATEGORIES, getJewelrySubcategory, parseImages, parseColors, parseImageColors, splitColors, parseExternalUrl, formatPrice } from '../../../lib/bijoux';
 import AddJewelryForm from '../../../components/AddJewelryForm';
 import JewelryImageUploader from '../../../components/JewelryImageUploader';
 
@@ -38,10 +38,11 @@ export default async function AdminBijouxPage() {
 
   async function createJewelry(formData) {
     'use server';
-    const name = (formData.get('name') || '').toString().trim();
+    const name = (formData.get('name') || '').toString().trim() || null;
     const subcategory = (formData.get('subcategory') || '').toString();
-    if (!name) return { error: 'Le nom est obligatoire.' };
     if (!getJewelrySubcategory(subcategory)) return { error: 'Choisis une sous-catégorie.' };
+    const etsy = parseExternalUrl(formData.get('etsy_url'));
+    if (etsy.invalid) return { error: "Le lien Etsy n'est pas valide." };
 
     const price = parsePrice(formData.get('price'));
     const materials = (formData.get('materials') || '').toString().trim() || null;
@@ -51,8 +52,8 @@ export default async function AdminBijouxPage() {
 
     try {
       const [row] = await sql`
-        INSERT INTO jewelry_items (name, subcategory, price, materials, description, is_available, colors)
-        VALUES (${name}, ${subcategory}, ${price}, ${materials}, ${description}, ${isAvailable}, ${colors})
+        INSERT INTO jewelry_items (name, subcategory, price, materials, description, is_available, colors, etsy_url)
+        VALUES (${name}, ${subcategory}, ${price}, ${materials}, ${description}, ${isAvailable}, ${colors}, ${etsy.url})
         RETURNING id
       `;
       refresh(subcategory);
@@ -86,9 +87,9 @@ export default async function AdminBijouxPage() {
   async function updateJewelry(formData) {
     'use server';
     const id = Number(formData.get('id'));
-    const name = (formData.get('name') || '').toString().trim();
+    const name = (formData.get('name') || '').toString().trim() || null;
     const subcategory = (formData.get('subcategory') || '').toString();
-    if (!id || !name || !getJewelrySubcategory(subcategory)) return;
+    if (!id || !getJewelrySubcategory(subcategory)) return;
 
     const price = parsePrice(formData.get('price'));
     const materials = (formData.get('materials') || '').toString().trim() || null;
@@ -96,7 +97,10 @@ export default async function AdminBijouxPage() {
     const isAvailable = formData.get('is_available') === 'on';
     const colors = JSON.stringify(splitColors(formData.get('colors')));
 
-    const [before] = await sql`SELECT subcategory, image_colors FROM jewelry_items WHERE id = ${id}`;
+    const [before] = await sql`SELECT subcategory, image_colors, etsy_url FROM jewelry_items WHERE id = ${id}`;
+    // Lien invalide : on garde l'ancien plutôt que d'effacer ou d'enregistrer n'importe quoi
+    const etsy = parseExternalUrl(formData.get('etsy_url'));
+    const etsyUrl = etsy.invalid ? before?.etsy_url ?? null : etsy.url;
     // On garde seulement les associations photo -> couleur dont la couleur existe encore
     const keptColors = splitColors(formData.get('colors'));
     const imageColors = Object.fromEntries(
@@ -107,7 +111,8 @@ export default async function AdminBijouxPage() {
       SET name = ${name}, subcategory = ${subcategory}, price = ${price},
           materials = ${materials}, description = ${description}, is_available = ${isAvailable},
           colors = ${colors},
-          image_colors = ${JSON.stringify(imageColors)}
+          image_colors = ${JSON.stringify(imageColors)},
+          etsy_url = ${etsyUrl}
       WHERE id = ${id}
     `;
     if (before?.subcategory && before.subcategory !== subcategory) refresh(before.subcategory, id);
@@ -214,9 +219,9 @@ export default async function AdminBijouxPage() {
                             <div className="w-16 h-16 rounded-xl bg-[#F7F4EE] shrink-0" />
                           )}
                           <div className="min-w-0">
-                            <p className="font-semibold text-[#4A3B32] break-words">{item.name}</p>
+                            <p className="font-semibold text-[#4A3B32] break-words">{item.name || '(sans nom)'}</p>
                             <p className="text-sm text-[#6B5B52]">
-                              {price || 'Prix sur demande'} · {item.is_available ? 'Disponible' : 'Indisponible'} · {images.length} photo(s)
+                              {price || 'Sans prix'} · {item.is_available ? 'Disponible' : 'Indisponible'}{item.etsy_url ? ' · lien Etsy' : ''} · {images.length} photo(s)
                               {parseColors(item.colors).length > 0 && ` · ${parseColors(item.colors).length} couleur(s)`}
                             </p>
                             <Link
@@ -289,7 +294,7 @@ export default async function AdminBijouxPage() {
                           <form action={updateJewelry} className="space-y-3">
                             <input type="hidden" name="id" value={item.id} />
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                              <input required name="name" defaultValue={item.name} className={field} placeholder="Nom" />
+                              <input name="name" defaultValue={item.name ?? ''} className={field} placeholder="Nom (optionnel)" />
                               <select name="subcategory" defaultValue={item.subcategory} className={field}>
                                 {JEWELRY_SUBCATEGORIES.map((s) => (
                                   <option key={s.slug} value={s.slug}>{s.label}</option>
@@ -298,6 +303,13 @@ export default async function AdminBijouxPage() {
                               <input name="price" defaultValue={item.price ?? ''} inputMode="decimal" className={field} placeholder="Prix en € (vide = sur demande)" />
                               <input name="materials" defaultValue={item.materials ?? ''} className={field} placeholder="Matières" />
                             </div>
+                            <input
+                              type="url"
+                              name="etsy_url"
+                              defaultValue={item.etsy_url ?? ''}
+                              className={field}
+                              placeholder="Lien de la fiche Etsy (https://www.etsy.com/...)"
+                            />
                             <input
                               name="colors"
                               defaultValue={parseColors(item.colors).join(', ')}

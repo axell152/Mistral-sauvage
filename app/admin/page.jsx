@@ -9,6 +9,7 @@ import PricingTableRow from '../../components/PricingTableRow';
 import AddPortfolioForm from '../../components/AddPortfolioForm';
 import { GALLERY_SECTIONS, isGallerySection, getSubcategories, isSubcategory } from '../../lib/gallery';
 import { optimizeImage } from '../../lib/images';
+import { parseExternalUrl } from '../../lib/bijoux';
 import Link from 'next/link';
 
 export const revalidate = 0;
@@ -132,6 +133,8 @@ export default async function AdminPage() {
   async function addPortfolioItem(formData) {
     'use server';
     const caption = formData.get('caption');
+    const etsy = parseExternalUrl(formData.get('etsy_url'));
+    if (etsy.invalid) return { error: "Le lien Etsy n'est pas valide." };
     const sectionInput = (formData.get('section') || '').toString();
     const section = isGallerySection(sectionInput) ? sectionInput : 'personnalisation';
     const hasSubcategories = getSubcategories(section).length > 0;
@@ -154,11 +157,23 @@ export default async function AdminPage() {
 
     if (!imageUrl) return { error: 'Aucune photo reçue.' };
 
-    await sql`INSERT INTO portfolio_items (image_url, caption, section, subcategory) VALUES (${imageUrl}, ${caption}, ${section}, ${subcategory})`;
+    await sql`INSERT INTO portfolio_items (image_url, caption, section, subcategory, etsy_url) VALUES (${imageUrl}, ${caption}, ${section}, ${subcategory}, ${etsy.url})`;
     revalidatePath(`/${section}`);
     if (subcategory) revalidatePath(`/${section}/${subcategory}`);
     revalidatePath('/admin');
     return { ok: true };
+  }
+
+  async function setPortfolioEtsy(formData) {
+    'use server';
+    const id = Number(formData.get('id'));
+    const etsy = parseExternalUrl(formData.get('etsy_url'));
+    if (!id || etsy.invalid) return;
+    const [item] = await sql`SELECT section FROM portfolio_items WHERE id = ${id}`;
+    if (!item) return;
+    await sql`UPDATE portfolio_items SET etsy_url = ${etsy.url} WHERE id = ${id}`;
+    revalidatePath(`/${isGallerySection(item.section) ? item.section : 'personnalisation'}`);
+    revalidatePath('/admin');
   }
 
   async function deletePortfolioItem(formData) {
@@ -284,7 +299,20 @@ export default async function AdminPage() {
               <div key={item.id} className="py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div className="flex items-center gap-4 min-w-0">
                   <img src={optimizeImage(item.image_url, 150)} alt="" className="w-12 h-12 rounded-xl object-cover shrink-0" />
-                  <p className="font-semibold text-[#4A3B32] break-words">{item.caption || '(sans légende)'}</p>
+                  <div className="min-w-0 space-y-1.5">
+                    <p className="font-semibold text-[#4A3B32] break-words">{item.caption || '(sans légende)'}</p>
+                    <form action={setPortfolioEtsy} className="flex gap-1.5">
+                      <input type="hidden" name="id" value={item.id} />
+                      <input
+                        type="url"
+                        name="etsy_url"
+                        defaultValue={item.etsy_url ?? ''}
+                        placeholder="Lien Etsy (optionnel)"
+                        className="w-48 sm:w-64 min-w-0 text-xs border border-[#EFECE6] rounded-lg bg-white px-2 py-1.5"
+                      />
+                      <button type="submit" className="text-xs rounded-lg bg-[#244738] text-white px-3 shrink-0">OK</button>
+                    </form>
+                  </div>
                 </div>
                 <form action={deletePortfolioItem}>
                   <input type="hidden" name="id" value={item.id} />
