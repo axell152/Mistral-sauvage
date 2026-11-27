@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import sql, { initDb } from '../../../lib/db';
 import { uploadImage, deleteImage } from '../../../lib/cloudinary';
 import { optimizeImage } from '../../../lib/images';
+import { reorderJewelry } from '../../../lib/jewelryOrder';
 import { JEWELRY_SUBCATEGORIES, getJewelrySubcategory, parseImages, parseColors, parseImageColors, splitColors, parseExternalUrl, formatPrice, cleanBadge, BADGE_SUGGESTIONS } from '../../../lib/bijoux';
 import AddJewelryForm from '../../../components/AddJewelryForm';
 import JewelryImageUploader from '../../../components/JewelryImageUploader';
@@ -36,34 +37,12 @@ export default async function AdminBijouxPage() {
 
   await initDb();
 
-  // Ordre d'affichage : position la plus haute = en premier (puis le plus récent à égalité).
-  // Avant chaque déplacement on renumérote toute la liste pour éviter les égalités.
-  async function reorder(id, dir) {
-    const rows = await sql`SELECT id, subcategory FROM jewelry_items ORDER BY position DESC, id DESC`;
-    const ids = rows.map((r) => r.id);
-    const idx = ids.indexOf(id);
-    if (idx === -1) return null;
-    if (dir === 'top') {
-      ids.splice(idx, 1);
-      ids.unshift(id);
-    } else if (dir === 'up' && idx > 0) {
-      [ids[idx - 1], ids[idx]] = [ids[idx], ids[idx - 1]];
-    } else if (dir === 'down' && idx < ids.length - 1) {
-      [ids[idx + 1], ids[idx]] = [ids[idx], ids[idx + 1]];
-    }
-    const n = ids.length;
-    for (let i = 0; i < n; i++) {
-      await sql`UPDATE jewelry_items SET position = ${n - i} WHERE id = ${ids[i]}`;
-    }
-    return rows.find((r) => r.id === id).subcategory;
-  }
-
   async function moveJewelry(formData) {
     'use server';
     const id = Number(formData.get('id'));
     const dir = (formData.get('dir') || '').toString();
     if (!id || !['top', 'up', 'down'].includes(dir)) return;
-    const sub = await reorder(id, dir);
+    const sub = await reorderJewelry(id, dir);
     refresh(sub, id);
   }
 
@@ -150,7 +129,7 @@ export default async function AdminBijouxPage() {
           badge = ${badge}
       WHERE id = ${id}
     `;
-    if (formData.get('bump') === 'on') await reorder(id, 'top');
+    if (formData.get('bump') === 'on') await reorderJewelry(id, 'top');
     if (before?.subcategory && before.subcategory !== subcategory) refresh(before.subcategory, id);
     refresh(subcategory, id);
   }
