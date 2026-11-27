@@ -83,6 +83,10 @@ export default function AddJewelryForm({ createAction, imageAction, subcategorie
         <input type="url" name="etsy_url" className={field} placeholder="https://www.etsy.com/listing/..." />
       </div>
       <div>
+        <label className={label}>Bandeau sur la photo (optionnel)</label>
+        <input name="badge" list="badge-suggestions" maxLength={30} className={field} placeholder="Ex. Dernière création" />
+      </div>
+      <div>
         <label className={label}>Couleurs proposées (optionnel, séparées par des virgules)</label>
         <input name="colors" className={field} placeholder="Ex. Doré, Argenté, Rose, Noir" />
       </div>

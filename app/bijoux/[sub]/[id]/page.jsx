@@ -33,8 +33,8 @@ export default async function JewelryPage({ params }) {
 
   return (
     <div className="max-w-5xl mx-auto pb-20 px-4 space-y-8">
-      <Link href={`/bijoux/${sc.slug}`} className="inline-block text-sm font-medium text-[#6B5B52] hover:text-[#5A3E36] transition">
-        ← {sc.label}
+      <Link href="/bijoux" className="inline-block text-sm font-medium text-[#6B5B52] hover:text-[#5A3E36] transition">
+        ← Tous les bijoux
       </Link>
 
       <ProductShowcase
@@ -51,6 +51,11 @@ export default async function JewelryPage({ params }) {
           <span className="text-xs font-semibold tracking-wider uppercase bg-[#244738]/10 text-[#244738] px-3 py-1 rounded-full">
             {sc.label}
           </span>
+          {item.badge && (
+            <span className="ml-2 text-xs font-semibold tracking-wider uppercase bg-[#BCAA7C] text-[#244738] px-3 py-1 rounded-full">
+              {item.badge}
+            </span>
+          )}
           {item.name && (
             <h1 className="text-3xl md:text-4xl font-serif font-bold text-[#4A3B32]">{item.name}</h1>
           )}
