@@ -5,7 +5,7 @@ import { revalidatePath } from 'next/cache';
 import sql, { initDb } from '../../../lib/db';
 import { uploadImage, deleteImage } from '../../../lib/cloudinary';
 import { optimizeImage } from '../../../lib/images';
-import { JEWELRY_SUBCATEGORIES, getJewelrySubcategory, parseImages, parseColors, parseImageColors, splitColors, parseExternalUrl, formatPrice } from '../../../lib/bijoux';
+import { JEWELRY_SUBCATEGORIES, getJewelrySubcategory, parseImages, parseColors, parseImageColors, splitColors, parseExternalUrl, formatPrice, cleanBadge, BADGE_SUGGESTIONS } from '../../../lib/bijoux';
 import AddJewelryForm from '../../../components/AddJewelryForm';
 import JewelryImageUploader from '../../../components/JewelryImageUploader';
 
@@ -49,11 +49,12 @@ export default async function AdminBijouxPage() {
     const description = (formData.get('description') || '').toString().trim() || null;
     const isAvailable = formData.get('is_available') === 'on';
     const colors = JSON.stringify(splitColors(formData.get('colors')));
+    const badge = cleanBadge(formData.get('badge'));
 
     try {
       const [row] = await sql`
-        INSERT INTO jewelry_items (name, subcategory, price, materials, description, is_available, colors, etsy_url)
-        VALUES (${name}, ${subcategory}, ${price}, ${materials}, ${description}, ${isAvailable}, ${colors}, ${etsy.url})
+        INSERT INTO jewelry_items (name, subcategory, price, materials, description, is_available, colors, etsy_url, badge)
+        VALUES (${name}, ${subcategory}, ${price}, ${materials}, ${description}, ${isAvailable}, ${colors}, ${etsy.url}, ${badge})
         RETURNING id
       `;
       refresh(subcategory);
@@ -96,6 +97,7 @@ export default async function AdminBijouxPage() {
     const description = (formData.get('description') || '').toString().trim() || null;
     const isAvailable = formData.get('is_available') === 'on';
     const colors = JSON.stringify(splitColors(formData.get('colors')));
+    const badge = cleanBadge(formData.get('badge'));
 
     const [before] = await sql`SELECT subcategory, image_colors, etsy_url FROM jewelry_items WHERE id = ${id}`;
     // Lien invalide : on garde l'ancien plutôt que d'effacer ou d'enregistrer n'importe quoi
@@ -112,7 +114,8 @@ export default async function AdminBijouxPage() {
           materials = ${materials}, description = ${description}, is_available = ${isAvailable},
           colors = ${colors},
           image_colors = ${JSON.stringify(imageColors)},
-          etsy_url = ${etsyUrl}
+          etsy_url = ${etsyUrl},
+          badge = ${badge}
       WHERE id = ${id}
     `;
     if (before?.subcategory && before.subcategory !== subcategory) refresh(before.subcategory, id);
@@ -184,6 +187,12 @@ export default async function AdminBijouxPage() {
         <p className="text-[#6B5B52]">Une fiche par bijou : photos, prix, description, disponibilité.</p>
       </div>
 
+      <datalist id="badge-suggestions">
+        {BADGE_SUGGESTIONS.map((b) => (
+          <option key={b} value={b} />
+        ))}
+      </datalist>
+
       <div className="bg-white p-6 rounded-3xl border border-[#EFECE6] shadow-xs">
         <h2 className="text-xl font-serif font-bold text-[#4A3B32] mb-4">Ajouter un bijou</h2>
         <AddJewelryForm
@@ -221,7 +230,7 @@ export default async function AdminBijouxPage() {
                           <div className="min-w-0">
                             <p className="font-semibold text-[#4A3B32] break-words">{item.name || '(sans nom)'}</p>
                             <p className="text-sm text-[#6B5B52]">
-                              {price || 'Sans prix'} · {item.is_available ? 'Disponible' : 'Indisponible'}{item.etsy_url ? ' · lien Etsy' : ''} · {images.length} photo(s)
+                              {price || 'Sans prix'} · {item.is_available ? 'Disponible' : 'Indisponible'}{item.etsy_url ? ' · lien Etsy' : ''}{item.badge ? ` · « ${item.badge} »` : ''} · {images.length} photo(s)
                               {parseColors(item.colors).length > 0 && ` · ${parseColors(item.colors).length} couleur(s)`}
                             </p>
                             <Link
@@ -309,6 +318,14 @@ export default async function AdminBijouxPage() {
                               defaultValue={item.etsy_url ?? ''}
                               className={field}
                               placeholder="Lien de la fiche Etsy (https://www.etsy.com/...)"
+                            />
+                            <input
+                              name="badge"
+                              list="badge-suggestions"
+                              maxLength={30}
+                              defaultValue={item.badge ?? ''}
+                              className={field}
+                              placeholder="Bandeau sur la photo, ex. Dernière création (vide = aucun)"
                             />
                             <input
                               name="colors"
