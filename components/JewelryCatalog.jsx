@@ -9,8 +9,8 @@ import { ETSY_SHOP_URL } from '../lib/site';
 export default async function JewelryCatalog({ activeSlug = null }) {
   await initDb();
   const items = activeSlug
-    ? await sql`SELECT * FROM jewelry_items WHERE subcategory = ${activeSlug} ORDER BY id DESC`
-    : await sql`SELECT * FROM jewelry_items ORDER BY id DESC`;
+    ? await sql`SELECT * FROM jewelry_items WHERE subcategory = ${activeSlug} ORDER BY position DESC, id DESC`
+    : await sql`SELECT * FROM jewelry_items ORDER BY position DESC, id DESC`;
 
   const filters = [{ slug: null, label: 'Tous', href: '/bijoux' }].concat(
     JEWELRY_SUBCATEGORIES.map((sc) => ({ slug: sc.slug, label: sc.label, href: `/bijoux/${sc.slug}` }))

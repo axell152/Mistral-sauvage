@@ -36,6 +36,37 @@ export default async function AdminBijouxPage() {
 
   await initDb();
 
+  // Ordre d'affichage : position la plus haute = en premier (puis le plus récent à égalité).
+  // Avant chaque déplacement on renumérote toute la liste pour éviter les égalités.
+  async function reorder(id, dir) {
+    const rows = await sql`SELECT id, subcategory FROM jewelry_items ORDER BY position DESC, id DESC`;
+    const ids = rows.map((r) => r.id);
+    const idx = ids.indexOf(id);
+    if (idx === -1) return null;
+    if (dir === 'top') {
+      ids.splice(idx, 1);
+      ids.unshift(id);
+    } else if (dir === 'up' && idx > 0) {
+      [ids[idx - 1], ids[idx]] = [ids[idx], ids[idx - 1]];
+    } else if (dir === 'down' && idx < ids.length - 1) {
+      [ids[idx + 1], ids[idx]] = [ids[idx], ids[idx + 1]];
+    }
+    const n = ids.length;
+    for (let i = 0; i < n; i++) {
+      await sql`UPDATE jewelry_items SET position = ${n - i} WHERE id = ${ids[i]}`;
+    }
+    return rows.find((r) => r.id === id).subcategory;
+  }
+
+  async function moveJewelry(formData) {
+    'use server';
+    const id = Number(formData.get('id'));
+    const dir = (formData.get('dir') || '').toString();
+    if (!id || !['top', 'up', 'down'].includes(dir)) return;
+    const sub = await reorder(id, dir);
+    refresh(sub, id);
+  }
+
   async function createJewelry(formData) {
     'use server';
     const name = (formData.get('name') || '').toString().trim() || null;
@@ -53,8 +84,9 @@ export default async function AdminBijouxPage() {
 
     try {
       const [row] = await sql`
-        INSERT INTO jewelry_items (name, subcategory, price, materials, description, is_available, colors, etsy_url, badge)
-        VALUES (${name}, ${subcategory}, ${price}, ${materials}, ${description}, ${isAvailable}, ${colors}, ${etsy.url}, ${badge})
+        INSERT INTO jewelry_items (name, subcategory, price, materials, description, is_available, colors, etsy_url, badge, position)
+        VALUES (${name}, ${subcategory}, ${price}, ${materials}, ${description}, ${isAvailable}, ${colors}, ${etsy.url}, ${badge},
+                (SELECT COALESCE(MAX(position), 0) + 1 FROM jewelry_items))
         RETURNING id
       `;
       refresh(subcategory);
@@ -118,6 +150,7 @@ export default async function AdminBijouxPage() {
           badge = ${badge}
       WHERE id = ${id}
     `;
+    if (formData.get('bump') === 'on') await reorder(id, 'top');
     if (before?.subcategory && before.subcategory !== subcategory) refresh(before.subcategory, id);
     refresh(subcategory, id);
   }
@@ -175,7 +208,7 @@ export default async function AdminBijouxPage() {
     refresh(item.subcategory, id);
   }
 
-  const items = await sql`SELECT * FROM jewelry_items ORDER BY id DESC`;
+  const items = await sql`SELECT * FROM jewelry_items ORDER BY position DESC, id DESC`;
 
   return (
     <div className="max-w-4xl mx-auto space-y-10 pb-20 px-4">
@@ -201,6 +234,43 @@ export default async function AdminBijouxPage() {
           subcategories={JEWELRY_SUBCATEGORIES}
         />
       </div>
+
+      {items.length > 1 && (
+        <details className="bg-white p-6 rounded-3xl border border-[#EFECE6] shadow-xs">
+          <summary className="cursor-pointer text-xl font-serif font-bold text-[#4A3B32]">
+            Ordre d'affichage ({items.length})
+          </summary>
+          <p className="text-sm text-[#6B5B52] mt-3 mb-4">
+            C'est l'ordre du site : le premier de la liste est en haut de la page Bijoux. Un nouveau bijou se place automatiquement en premier.
+          </p>
+          <ol className="space-y-2">
+            {items.map((item, i) => {
+              const cover = parseImages(item.images)[0];
+              const label = getJewelrySubcategory(item.subcategory)?.label;
+              return (
+                <li key={item.id} className="flex items-center gap-3 border border-[#EFECE6] rounded-2xl p-2">
+                  <span className="w-6 text-center text-xs text-[#6B5B52] shrink-0">{i + 1}</span>
+                  {cover ? (
+                    <img src={optimizeImage(cover, 100)} alt="" className="w-12 h-12 rounded-lg object-cover shrink-0" />
+                  ) : (
+                    <div className="w-12 h-12 rounded-lg bg-[#F7F4EE] shrink-0" />
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-[#4A3B32] truncate">{item.name || '(sans nom)'}</p>
+                    <p className="text-xs text-[#6B5B52] truncate">{label}</p>
+                  </div>
+                  <form action={moveJewelry} className="flex gap-1 shrink-0">
+                    <input type="hidden" name="id" value={item.id} />
+                    <button type="submit" name="dir" value="top" disabled={i === 0} title="Tout en haut" className="px-2.5 py-1.5 text-xs rounded-lg bg-[#F7F4EE] hover:bg-[#EFECE6] text-[#4A3B32] disabled:opacity-30">⤒</button>
+                    <button type="submit" name="dir" value="up" disabled={i === 0} title="Monter" className="px-2.5 py-1.5 text-xs rounded-lg bg-[#F7F4EE] hover:bg-[#EFECE6] text-[#4A3B32] disabled:opacity-30">↑</button>
+                    <button type="submit" name="dir" value="down" disabled={i === items.length - 1} title="Descendre" className="px-2.5 py-1.5 text-xs rounded-lg bg-[#F7F4EE] hover:bg-[#EFECE6] text-[#4A3B32] disabled:opacity-30">↓</button>
+                  </form>
+                </li>
+              );
+            })}
+          </ol>
+        </details>
+      )}
 
       {JEWELRY_SUBCATEGORIES.map((sc) => {
         const list = items.filter((item) => item.subcategory === sc.slug);
@@ -242,12 +312,21 @@ export default async function AdminBijouxPage() {
                             </Link>
                           </div>
                         </div>
-                        <form action={deleteJewelry}>
-                          <input type="hidden" name="id" value={item.id} />
-                          <button type="submit" className="px-3 py-1.5 text-xs font-medium rounded-xl bg-red-50 text-red-600 hover:bg-red-100 shrink-0">
-                            Supprimer
-                          </button>
-                        </form>
+                        <div className="flex flex-col gap-2 shrink-0">
+                          <form action={moveJewelry}>
+                            <input type="hidden" name="id" value={item.id} />
+                            <input type="hidden" name="dir" value="top" />
+                            <button type="submit" className="w-full px-3 py-1.5 text-xs font-medium rounded-xl bg-[#F7F4EE] text-[#4A3B32] hover:bg-[#EFECE6]">
+                              ⤒ Remettre en haut
+                            </button>
+                          </form>
+                          <form action={deleteJewelry}>
+                            <input type="hidden" name="id" value={item.id} />
+                            <button type="submit" className="w-full px-3 py-1.5 text-xs font-medium rounded-xl bg-red-50 text-red-600 hover:bg-red-100">
+                              Supprimer
+                            </button>
+                          </form>
+                        </div>
                       </div>
 
                       {images.length > 0 && (
@@ -334,6 +413,10 @@ export default async function AdminBijouxPage() {
                               placeholder="Couleurs proposées, séparées par des virgules"
                             />
                             <textarea name="description" rows={3} defaultValue={item.description ?? ''} className={field} placeholder="Description" />
+                            <label className="flex items-center gap-2 text-sm text-[#4A3B32]">
+                              <input type="checkbox" name="bump" className="w-4 h-4 accent-[#5A3E36]" />
+                              Remettre en haut de la liste en enregistrant
+                            </label>
                             <label className="flex items-center gap-2 text-sm text-[#4A3B32]">
                               <input type="checkbox" name="is_available" defaultChecked={item.is_available} className="w-4 h-4 accent-[#5A3E36]" />
                               Disponible
