@@ -1,12 +1,12 @@
 import sql, { initDb } from '../../lib/db';
 import Link from 'next/link';
-import { optimizeImage } from '../../lib/images';
+import GalleryGrid from '../../components/GalleryGrid';
 
 export const revalidate = 0;
 
 export default async function HomePage() {
   await initDb();
-  const items = await sql`SELECT * FROM portfolio_items WHERE section = 'personnalisation' ORDER BY position, id DESC`;
+  const items = await sql`SELECT * FROM portfolio_items WHERE section = 'personnalisation' ORDER BY position DESC, id DESC`;
 
   return (
     <div className="max-w-5xl mx-auto space-y-12 pb-20 px-4">
@@ -32,37 +32,7 @@ export default async function HomePage() {
             <p className="text-lg">Le portfolio arrive bientôt.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-            {items.map((item) => (
-              <div
-                key={item.id}
-                className="bg-white rounded-3xl border border-[#EFECE6] overflow-hidden shadow-xs group"
-              >
-                <div className="aspect-square overflow-hidden bg-[#F7F4EE]">
-                  <img
-                    src={optimizeImage(item.image_url)}
-                    alt={item.caption || "Réalisation Mistral sauvage"}
-                    className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
-                  />
-                </div>
-                {item.caption && (
-                  <p className="text-sm text-[#6B5B52] px-3 py-2 text-center">{item.caption}</p>
-                )}
-                {item.etsy_url && (
-                  <div className="px-3 pb-3 text-center">
-                    <a
-                      href={item.etsy_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-block text-sm font-semibold bg-[#244738] hover:bg-[#1B352A] text-white px-4 py-2 rounded-xl transition"
-                    >
-                      Voir sur Etsy
-                    </a>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
+          <GalleryGrid items={items} altFallback="Réalisation Mistral sauvage" />
         )}
       </div>
 

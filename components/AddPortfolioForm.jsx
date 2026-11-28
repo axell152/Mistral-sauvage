@@ -51,8 +51,11 @@ export default function AddPortfolioForm({ action, sections = [] }) {
 
     // Une photo à la fois : évite la limite de taille des requêtes Vercel et permet
     // de continuer si l'une d'elles échoue.
-    for (let i = 0; i < files.length; i++) {
-      setProgress({ current: i + 1, total: files.length });
+    // On envoie de la dernière à la première : une nouvelle photo se place en haut de la liste,
+    // la première photo choisie finit donc en premier sur le site.
+    for (let step = 0; step < files.length; step++) {
+      const i = files.length - 1 - step;
+      setProgress({ current: step + 1, total: files.length });
 
       setStatus('compressing');
       const compressed = await compressImage(files[i], 1600, 0.8);
@@ -90,6 +93,7 @@ export default function AddPortfolioForm({ action, sections = [] }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      <p className="text-sm text-[#6B5B52]">Seule la photo est obligatoire : tout le reste est optionnel.</p>
       <div>
         <label className="block text-sm font-medium text-[#6B5B52] mb-1">Section</label>
         <select
@@ -105,14 +109,13 @@ export default function AddPortfolioForm({ action, sections = [] }) {
       </div>
       {subcategories.length > 0 && (
         <div>
-          <label className="block text-sm font-medium text-[#6B5B52] mb-1">Sous-catégorie</label>
+          <label className="block text-sm font-medium text-[#6B5B52] mb-1">Sous-catégorie (optionnel)</label>
           <select
-            required
             name="subcategory"
             defaultValue=""
             className="w-full border border-[#EFECE6] rounded-2xl px-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#5A3E36]"
           >
-            <option value="" disabled>Choisir...</option>
+            <option value="">Aucune (visible dans « Tous »)</option>
             {subcategories.map((s) => (
               <option key={s.slug} value={s.slug}>{s.label}</option>
             ))}
@@ -129,6 +132,17 @@ export default function AddPortfolioForm({ action, sections = [] }) {
           type="text"
           name="caption"
           placeholder="Ex: Pochette chat mystique"
+          className="w-full border border-[#EFECE6] rounded-2xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#5A3E36]"
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-[#6B5B52] mb-1">Bandeau sur la photo (optionnel, appliqué à toutes les photos)</label>
+        <input
+          type="text"
+          name="badge"
+          list="badge-suggestions"
+          maxLength={30}
+          placeholder="Ex. Dernière création"
           className="w-full border border-[#EFECE6] rounded-2xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#5A3E36]"
         />
       </div>
@@ -153,7 +167,7 @@ export default function AddPortfolioForm({ action, sections = [] }) {
       >
         {status === 'compressing' && `Compression ${progress.current}/${progress.total}...`}
         {status === 'submitting' && `Enregistrement ${progress.current}/${progress.total}...`}
-        {status === 'idle' && 'Ajouter au portfolio'}
+        {status === 'idle' && 'Ajouter les photos'}
       </button>
     </form>
   );
