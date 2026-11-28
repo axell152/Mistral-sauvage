@@ -7,12 +7,26 @@ import { uploadImage, deleteImage, isCloudinaryUrl } from '../../lib/cloudinary'
 import PricingTableEditor from '../../components/PricingTableEditor';
 import PricingTableRow from '../../components/PricingTableRow';
 import AddPortfolioForm from '../../components/AddPortfolioForm';
-import { GALLERY_SECTIONS, isGallerySection, getSubcategories, isSubcategory } from '../../lib/gallery';
+import {
+  GALLERY_SECTIONS,
+  BADGE_SUGGESTIONS,
+  isGallerySection,
+  getSubcategories,
+  isSubcategory,
+  pathForSection,
+  cleanBadge,
+  parseExternalUrl,
+} from '../../lib/gallery';
+import { reorderGalleryItem } from '../../lib/galleryOrder';
 import { optimizeImage } from '../../lib/images';
-import { parseExternalUrl } from '../../lib/bijoux';
-import Link from 'next/link';
 
 export const revalidate = 0;
+
+function refreshGallery(section) {
+  revalidatePath(pathForSection(section));
+  revalidatePath('/');
+  revalidatePath('/admin');
+}
 
 export default async function AdminPage() {
   const cookieStore = cookies();
@@ -132,17 +146,14 @@ export default async function AdminPage() {
 
   async function addPortfolioItem(formData) {
     'use server';
-    const caption = formData.get('caption');
+    const caption = (formData.get('caption') || '').toString().trim() || null;
+    const badge = cleanBadge(formData.get('badge'));
     const etsy = parseExternalUrl(formData.get('etsy_url'));
     if (etsy.invalid) return { error: "Le lien Etsy n'est pas valide." };
     const sectionInput = (formData.get('section') || '').toString();
     const section = isGallerySection(sectionInput) ? sectionInput : 'personnalisation';
-    const hasSubcategories = getSubcategories(section).length > 0;
     const subInput = (formData.get('subcategory') || '').toString();
-    if (hasSubcategories && !isSubcategory(section, subInput)) {
-      return { error: 'Choisis une sous-catégorie.' };
-    }
-    const subcategory = hasSubcategories ? subInput : null;
+    const subcategory = isSubcategory(section, subInput) ? subInput : null;
     let imageUrl = '';
 
     try {
@@ -157,34 +168,57 @@ export default async function AdminPage() {
 
     if (!imageUrl) return { error: 'Aucune photo reçue.' };
 
-    await sql`INSERT INTO portfolio_items (image_url, caption, section, subcategory, etsy_url) VALUES (${imageUrl}, ${caption}, ${section}, ${subcategory}, ${etsy.url})`;
-    revalidatePath(`/${section}`);
-    if (subcategory) revalidatePath(`/${section}/${subcategory}`);
-    revalidatePath('/admin');
+    // Une nouvelle photo se place automatiquement en premier de sa section.
+    await sql`
+      INSERT INTO portfolio_items (image_url, caption, section, subcategory, etsy_url, badge, position)
+      VALUES (${imageUrl}, ${caption}, ${section}, ${subcategory}, ${etsy.url}, ${badge},
+              (SELECT COALESCE(MAX(position), 0) + 1 FROM portfolio_items WHERE section = ${section}))
+    `;
+    refreshGallery(section);
     return { ok: true };
   }
 
-  async function setPortfolioEtsy(formData) {
+  async function updatePortfolioItem(formData) {
     'use server';
     const id = Number(formData.get('id'));
-    const etsy = parseExternalUrl(formData.get('etsy_url'));
-    if (!id || etsy.invalid) return;
-    const [item] = await sql`SELECT section FROM portfolio_items WHERE id = ${id}`;
+    if (!id) return;
+    const [item] = await sql`SELECT section, etsy_url FROM portfolio_items WHERE id = ${id}`;
     if (!item) return;
-    await sql`UPDATE portfolio_items SET etsy_url = ${etsy.url} WHERE id = ${id}`;
-    revalidatePath(`/${isGallerySection(item.section) ? item.section : 'personnalisation'}`);
-    revalidatePath('/admin');
+    const section = isGallerySection(item.section) ? item.section : 'personnalisation';
+
+    const caption = (formData.get('caption') || '').toString().trim() || null;
+    const badge = cleanBadge(formData.get('badge'));
+    // Lien invalide : on garde l'ancien plutôt que d'effacer ou d'enregistrer n'importe quoi
+    const etsy = parseExternalUrl(formData.get('etsy_url'));
+    const etsyUrl = etsy.invalid ? item.etsy_url ?? null : etsy.url;
+    const subInput = (formData.get('subcategory') || '').toString();
+    const subcategory = isSubcategory(section, subInput) ? subInput : null;
+
+    await sql`
+      UPDATE portfolio_items
+      SET caption = ${caption}, badge = ${badge}, etsy_url = ${etsyUrl}, subcategory = ${subcategory}
+      WHERE id = ${id}
+    `;
+    if (formData.get('bump') === 'on') await reorderGalleryItem(id, 'top');
+    refreshGallery(section);
+  }
+
+  async function movePortfolioItem(formData) {
+    'use server';
+    const id = Number(formData.get('id'));
+    const dir = (formData.get('dir') || '').toString();
+    if (!id || !['top', 'up', 'down'].includes(dir)) return;
+    const section = await reorderGalleryItem(id, dir);
+    if (section) refreshGallery(section);
   }
 
   async function deletePortfolioItem(formData) {
     'use server';
-    const id = formData.get('id');
+    const id = Number(formData.get('id'));
     let section = 'personnalisation';
-    let subcategory = null;
 
     try {
-      const [item] = await sql`SELECT image_url, section, subcategory FROM portfolio_items WHERE id = ${id}`;
-      subcategory = item?.subcategory || null;
+      const [item] = await sql`SELECT image_url, section FROM portfolio_items WHERE id = ${id}`;
       if (isGallerySection(item?.section)) section = item.section;
       if (isCloudinaryUrl(item?.image_url)) {
         await deleteImage(item.image_url).catch(() => {});
@@ -192,13 +226,11 @@ export default async function AdminPage() {
         await del(item.image_url).catch(() => {});
       }
     } catch (e) {
-      console.log('Erreur suppression image Blob portfolio:', e);
+      console.log('Erreur suppression image portfolio:', e);
     }
 
     await sql`DELETE FROM portfolio_items WHERE id = ${id}`;
-    revalidatePath(`/${section}`);
-    if (subcategory) revalidatePath(`/${section}/${subcategory}`);
-    revalidatePath('/admin');
+    refreshGallery(section);
   }
 
   const pricingTableRows = await sql`
@@ -229,25 +261,14 @@ export default async function AdminPage() {
     }
   });
 
-  const portfolioItems = await sql`SELECT * FROM portfolio_items ORDER BY position, id DESC`;
+  const portfolioItems = await sql`SELECT * FROM portfolio_items ORDER BY position DESC, id DESC`;
 
   return (
     <div className="max-w-4xl mx-auto space-y-10 pb-20 px-4">
       <div>
         <h1 className="text-3xl font-serif font-bold text-[#4A3B32] mb-2">Espace Administration</h1>
-        <p className="text-[#6B5B52]">Gérez vos tarifs et les réalisations de chaque section.</p>
+        <p className="text-[#6B5B52]">Gérez vos tarifs et les photos de chaque page (Personnalisation, Bijoux, accueil).</p>
       </div>
-
-      <Link
-        href="/admin/bijoux"
-        className="flex items-center justify-between bg-white p-6 rounded-3xl border border-[#EFECE6] shadow-xs hover:shadow-md transition"
-      >
-        <div>
-          <span className="font-serif font-bold text-lg text-[#4A3B32] block">Gérer les bijoux</span>
-          <span className="text-sm text-[#6B5B52]">Fiches produits : photos, prix, description, disponibilité</span>
-        </div>
-        <span className="text-[#6B5B52]">→</span>
-      </Link>
 
       <div className="bg-white p-6 rounded-3xl border border-[#EFECE6] shadow-xs">
         <h2 className="text-xl font-serif font-bold text-[#4A3B32] mb-4">Créer un tableau de tarifs</h2>
@@ -283,8 +304,14 @@ export default async function AdminPage() {
         )}
       </div>
 
+      <datalist id="badge-suggestions">
+        {BADGE_SUGGESTIONS.map((b) => (
+          <option key={b} value={b} />
+        ))}
+      </datalist>
+
       <div className="bg-white p-6 rounded-3xl border border-[#EFECE6] shadow-xs">
-        <h2 className="text-xl font-serif font-bold text-[#4A3B32] mb-4">Ajouter une photo</h2>
+        <h2 className="text-xl font-serif font-bold text-[#4A3B32] mb-4">Ajouter des photos</h2>
         <AddPortfolioForm action={addPortfolioItem} sections={GALLERY_SECTIONS} />
       </div>
 
@@ -292,79 +319,81 @@ export default async function AdminPage() {
         const sectionItems = portfolioItems.filter(
           (item) => (item.section || 'personnalisation') === section.slug
         );
-
-        const renderRows = (list) => (
-          <div className="divide-y divide-[#F7F4EE]">
-            {list.map((item) => (
-              <div key={item.id} className="py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <div className="flex items-center gap-4 min-w-0">
-                  <img src={optimizeImage(item.image_url, 150)} alt="" className="w-12 h-12 rounded-xl object-cover shrink-0" />
-                  <div className="min-w-0 space-y-1.5">
-                    <p className="font-semibold text-[#4A3B32] break-words">{item.caption || '(sans légende)'}</p>
-                    <form action={setPortfolioEtsy} className="flex gap-1.5">
-                      <input type="hidden" name="id" value={item.id} />
-                      <input
-                        type="url"
-                        name="etsy_url"
-                        defaultValue={item.etsy_url ?? ''}
-                        placeholder="Lien Etsy (optionnel)"
-                        className="w-48 sm:w-64 min-w-0 text-xs border border-[#EFECE6] rounded-lg bg-white px-2 py-1.5"
-                      />
-                      <button type="submit" className="text-xs rounded-lg bg-[#244738] text-white px-3 shrink-0">OK</button>
-                    </form>
-                  </div>
-                </div>
-                <form action={deletePortfolioItem}>
-                  <input type="hidden" name="id" value={item.id} />
-                  <button type="submit" className="px-3 py-1.5 text-xs font-medium rounded-xl bg-red-50 text-red-600 hover:bg-red-100 shrink-0">
-                    Supprimer
-                  </button>
-                </form>
-              </div>
-            ))}
-          </div>
-        );
-
         const subs = section.subcategories || [];
-        // Photos d'une section à sous-catégories sans sous-catégorie (ajoutées avant l'arrivée des sous-catégories)
-        const orphans = subs.length > 0
-          ? sectionItems.filter((item) => !subs.some((sc) => sc.slug === item.subcategory))
-          : [];
+        const input = 'w-full border border-[#EFECE6] rounded-xl bg-white px-3 py-2 text-sm';
 
         return (
           <div key={section.slug} className="bg-white p-6 rounded-3xl border border-[#EFECE6] shadow-xs">
-            <h2 className="text-xl font-serif font-bold text-[#4A3B32] mb-4">
-              Réalisations : {section.label} ({sectionItems.length})
+            <h2 className="text-xl font-serif font-bold text-[#4A3B32] mb-1">
+              {section.label} ({sectionItems.length})
             </h2>
+            <p className="text-sm text-[#6B5B52] mb-4">
+              C'est l'ordre du site : la première photo de la liste s'affiche en premier. Une nouvelle photo se place en haut.
+            </p>
             {sectionItems.length === 0 ? (
               <p className="text-sm text-[#6B5B52]">Aucune photo ajoutée pour le moment.</p>
-            ) : subs.length === 0 ? (
-              renderRows(sectionItems)
             ) : (
-              <div className="space-y-6">
-                {subs.map((sc) => {
-                  const list = sectionItems.filter((item) => item.subcategory === sc.slug);
+              <div className="space-y-3">
+                {sectionItems.map((item, i) => {
+                  const subLabel = subs.find((sc) => sc.slug === item.subcategory)?.label;
                   return (
-                    <div key={sc.slug}>
-                      <h3 className="text-sm font-semibold uppercase tracking-wide text-[#6B5B52] mb-1">
-                        {sc.label} ({list.length})
-                      </h3>
-                      {list.length === 0 ? (
-                        <p className="text-sm text-[#6B5B52]">Aucune photo.</p>
-                      ) : (
-                        renderRows(list)
-                      )}
+                    <div key={item.id} className="border border-[#EFECE6] rounded-2xl p-3 space-y-3">
+                      <div className="flex items-center gap-3">
+                        <span className="w-6 text-center text-xs text-[#6B5B52] shrink-0">{i + 1}</span>
+                        <img src={optimizeImage(item.image_url, 150)} alt="" className="w-14 h-14 rounded-xl object-cover shrink-0" />
+                        <div className="min-w-0 flex-1">
+                          <p className="font-semibold text-[#4A3B32] break-words">{item.caption || '(sans légende)'}</p>
+                          <p className="text-xs text-[#6B5B52] break-words">
+                            {[
+                              subLabel,
+                              item.badge ? `Bandeau « ${item.badge} »` : null,
+                              item.etsy_url ? 'Lien Etsy' : null,
+                            ].filter(Boolean).join(' · ') || 'Photo seule'}
+                          </p>
+                        </div>
+                        <form action={movePortfolioItem} className="flex gap-1 shrink-0">
+                          <input type="hidden" name="id" value={item.id} />
+                          <button type="submit" name="dir" value="top" disabled={i === 0} title="Tout en haut" className="px-2.5 py-1.5 text-xs rounded-lg bg-[#F7F4EE] hover:bg-[#EFECE6] text-[#4A3B32] disabled:opacity-30">⤒</button>
+                          <button type="submit" name="dir" value="up" disabled={i === 0} title="Monter" className="px-2.5 py-1.5 text-xs rounded-lg bg-[#F7F4EE] hover:bg-[#EFECE6] text-[#4A3B32] disabled:opacity-30">↑</button>
+                          <button type="submit" name="dir" value="down" disabled={i === sectionItems.length - 1} title="Descendre" className="px-2.5 py-1.5 text-xs rounded-lg bg-[#F7F4EE] hover:bg-[#EFECE6] text-[#4A3B32] disabled:opacity-30">↓</button>
+                        </form>
+                      </div>
+
+                      <details>
+                        <summary className="cursor-pointer text-sm font-medium text-[#5A3E36]">Modifier / supprimer</summary>
+                        <div className="mt-3 space-y-3">
+                          <form action={updatePortfolioItem} className="space-y-2">
+                            <input type="hidden" name="id" value={item.id} />
+                            <input name="caption" defaultValue={item.caption ?? ''} placeholder="Légende (optionnel)" className={input} />
+                            <input name="badge" list="badge-suggestions" maxLength={30} defaultValue={item.badge ?? ''} placeholder="Bandeau sur la photo, ex. Dernière création (vide = aucun)" className={input} />
+                            <input type="url" name="etsy_url" defaultValue={item.etsy_url ?? ''} placeholder="Lien Etsy (optionnel)" className={input} />
+                            {subs.length > 0 && (
+                              <select name="subcategory" defaultValue={item.subcategory ?? ''} className={input}>
+                                <option value="">Sans sous-catégorie (visible dans « Tous »)</option>
+                                {subs.map((sc) => (
+                                  <option key={sc.slug} value={sc.slug}>{sc.label}</option>
+                                ))}
+                              </select>
+                            )}
+                            <label className="flex items-center gap-2 text-sm text-[#4A3B32]">
+                              <input type="checkbox" name="bump" className="w-4 h-4 accent-[#5A3E36]" />
+                              Remettre en haut de la liste en enregistrant
+                            </label>
+                            <button type="submit" className="px-4 py-2 text-sm font-semibold rounded-xl bg-[#244738] text-white hover:bg-[#1B352A]">
+                              Enregistrer
+                            </button>
+                          </form>
+                          <form action={deletePortfolioItem}>
+                            <input type="hidden" name="id" value={item.id} />
+                            <button type="submit" className="px-3 py-1.5 text-xs font-medium rounded-xl bg-red-50 text-red-600 hover:bg-red-100">
+                              Supprimer cette photo
+                            </button>
+                          </form>
+                        </div>
+                      </details>
                     </div>
                   );
                 })}
-                {orphans.length > 0 && (
-                  <div>
-                    <h3 className="text-sm font-semibold uppercase tracking-wide text-red-600 mb-1">
-                      Sans sous-catégorie, non visibles sur le site ({orphans.length})
-                    </h3>
-                    {renderRows(orphans)}
-                  </div>
-                )}
               </div>
             )}
           </div>

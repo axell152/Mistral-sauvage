@@ -1,7 +1,14 @@
 import Link from 'next/link';
 import { SECTIONS } from '../lib/sections';
+import sql, { initDb } from '../lib/db';
+import GalleryGrid from '../components/GalleryGrid';
 
-export default function HomePage() {
+export const revalidate = 0;
+
+export default async function HomePage() {
+  await initDb();
+  const featured = await sql`SELECT * FROM portfolio_items WHERE section = 'accueil' ORDER BY position DESC, id DESC`;
+
   return (
     <div className="max-w-5xl mx-auto space-y-12 pb-20 px-4">
       <div className="text-center space-y-4 py-8 bg-white rounded-3xl border border-[#EFECE6] shadow-xs px-6">
@@ -32,6 +39,8 @@ export default function HomePage() {
           </Link>
         ))}
       </div>
+
+      {featured.length > 0 && <GalleryGrid items={featured} />}
     </div>
   );
 }
